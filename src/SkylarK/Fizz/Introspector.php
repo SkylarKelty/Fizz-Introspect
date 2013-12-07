@@ -74,6 +74,9 @@ class Introspector
 
 	/**
 	 * Saves Fizz Models to a directory
+	 * 
+	 * @param string $directory The directory to write the PHP model's too
+	 * @param string $namespace The namespace for each model
 	 */
 	public function saveModels($directory, $namespace = '') {
 		if (!$this->_fizz_pdo) {
