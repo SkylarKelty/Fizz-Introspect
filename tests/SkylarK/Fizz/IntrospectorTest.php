@@ -3,21 +3,25 @@
 class IntrospectorTest extends PHPUnit_Framework_TestCase
 {
 	public function setUp() {
-		$this->introspector = new SkylarK\Fizz\Introspector("mysql:dbname=testdb;host=127.0.0.1", "travis", "");
+		try {
+			SkylarK\Fizz\FizzConfig::setDB("mysql:dbname=testdb;host=127.0.0.1", "travis", "");
+		}
+		catch (PDOException $e) {
+			die($e->getMessage());
+			exit(0);
+		}
+
+		$this->introspector = new SkylarK\Fizz\Introspector();
 	}
 
 	public function test_Tables() {
-		$tables = $this->introspector->getTables();
+		$foldername = "/tmp/FizzIntrospectorTest";
 
-		$this->assertEquals(1, count($tables));
-		$this->assertEquals("Demo", $tables[0]);
-	}
+		if (!file_exists($foldername)) {
+			mkdir($foldername);
+		}
 
-	public function test_ColumnMeta() {
-		$meta = $this->introspector->getMeta("Demo");
-
-		$this->assertEquals(2, count($meta));
-		$this->assertEquals("key", $meta[0]["name"]);
-		$this->assertEquals("value", $meta[1]["name"]);
+		$this->introspector->saveModels($foldername);
+		$this->assertEquals(2, count(glob("$foldername/*.php")));
 	}
 }

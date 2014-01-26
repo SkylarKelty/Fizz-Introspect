@@ -13,62 +13,14 @@ namespace SkylarK\Fizz;
 class Introspector
 {
 	/** Our PDO instance */
-	private $_fizz_pdo;
+	private $_introspector;
 
 	/**
 	 * Initialize a Fizz Introspector object.
 	 * Only supports MySQL for now..
-	 * 
-	 * @param string $db_dsn A PDO connection string
-	 * @param string $db_username A PDO connection username
-	 * @param string $db_password A PDO connection password
 	 */
-	public function __construct($db_dsn, $db_username = NULL, $db_password = NULL) {
-		$this->_fizz_pdo = new \PDO($db_dsn, $db_username, $db_password);
-		if (!$this->_fizz_pdo) {
-			throw new Exceptions\FizzDatabaseConnectionException("Could not connect to Database");
-		}
-	}
-
-	/**
-	 * Returns a list of tables in the database
-	 *
-	 * @return array Array of tables
-	 */
-	public function getTables() {
-		$result = array();
-
-		$stmt = $this->_fizz_pdo->query("SHOW TABLES");
-		foreach ($stmt as $row) {
-			$result[] = $row[0];
-		}
-
-		return $result;
-	}
-
-	/**
-	 * Returns an array of column metadata for a given table
-	 *
-	 * @param string $table The table to inspect
-	 * @return array Array of column metadata
-	 */
-	public function getMeta($table) {
-		$result = array();
-
-		$stmt = $this->_fizz_pdo->query("DESCRIBE $table");
-
-		foreach ($stmt as $v) {
-			$result[] = array(
-				"name" => $v['Field'],
-				"type" => $v['Type'],
-				"null" => $v['Null'],
-				"iskey" => $v['Key'],
-				"default" => $v['Default'],
-				"extra" => $v['Extra']
-			);
-		}
-
-		return $result;
+	public function __construct() {
+		$this->_introspector = new Util\Introspect();
 	}
 
 
@@ -79,10 +31,6 @@ class Introspector
 	 * @param string $namespace The namespace for each model
 	 */
 	public function saveModels($directory, $namespace = '') {
-		if (!$this->_fizz_pdo) {
-			return false;
-		}
-
 		if (!is_writable($directory)) {
 			echo "Cannot write to directory!\n";
 			return;
@@ -90,7 +38,7 @@ class Introspector
 
 		echo "Running Introspector...\n";
 
-		$tables = $this->getTables();
+		$tables = $this->_introspector->getTables();
 
 		if (empty($tables)) {
 			die("No tables found.\n");
@@ -102,7 +50,7 @@ class Introspector
 		foreach ($tables as $table) {
 			echo "Processing $table...\n";
 
-			$meta = $this->getMeta($table);
+			$meta = $this->_introspector->getMeta($table);
 
 			// Support PSR-0 autoloading
 			$tClass = str_replace("_", " ", $table);
@@ -158,20 +106,16 @@ class Introspector
 	 * Prints Fizz Models
 	 */
 	public function printModels() {
-		if (!$this->_fizz_pdo) {
-			return false;
-		}
-
 		echo "Running Introspector...\n";
 
-		$tables = $this->getTables();
+		$tables = $this->_introspector->getTables();
 
 		if (empty($tables)) {
 			die("No tables found.\n");
 		}
 
 		foreach ($tables as $table) {
-			$meta = $this->getMeta($table);
+			$meta = $this->_introspector->getMeta($table);
 
 			echo "class $table extends SkylarK\Fizz\Fizz\n";
 			echo "{\n";
